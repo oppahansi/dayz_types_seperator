@@ -1,11 +1,13 @@
 // Dart Imports
-import 'dart:io';
+import "dart:io";
 
 // Package Imports
-import 'package:args/args.dart';
-import 'package:xml/xml.dart';
+import "package:args/args.dart";
+import "package:xml/xml.dart";
 
-const String version = '0.0.1';
+import "types_map.dart";
+
+const String version = "0.0.1";
 
 void main(List<String> arguments) {
   final ArgParser argParser = buildParser();
@@ -13,19 +15,20 @@ void main(List<String> arguments) {
     final ArgResults results = argParser.parse(arguments);
 
     // Process the parsed arguments.
-    if (results.wasParsed('help')) {
+    if (results.wasParsed("help")) {
       printUsage(argParser);
       return;
     }
 
-    if (results.wasParsed('path')) {
-      var path = results['path'] as String;
+    if (results.wasParsed("path")) {
+      var path = results["path"] as String;
+      // extractTypeNames(path);
       splitTypes(path);
     }
   } on FormatException catch (e) {
     // Print usage information if an invalid argument was provided.
     print(e.message);
-    print('');
+    print("");
     printUsage(argParser);
   }
 }
@@ -33,10 +36,10 @@ void main(List<String> arguments) {
 ArgParser buildParser() {
   return ArgParser()
     ..addFlag(
-      'help',
-      abbr: 'h',
+      "help",
+      abbr: "h",
       negatable: false,
-      help: 'Print this usage information.',
+      help: "Print this usage information.",
     )
 
     // TODO add option for output directory
@@ -45,14 +48,14 @@ ArgParser buildParser() {
     // TODO add option for filter by element attribute example: <category name="weapon"..
     // TODO add option for filter by element value example: <cost>100</cost>
     ..addOption(
-      'path',
-      abbr: 'p',
-      help: 'Absolute path to the types.xml file.',
+      "path",
+      abbr: "p",
+      help: "Absolute path to the types.xml file.",
     );
 }
 
 void printUsage(ArgParser argParser) {
-  print('Usage: dart dayz_types_seperator.dart <flags> [arguments]');
+  print("Usage: dart dayz_types_seperator.dart <flags> [arguments]");
   print(argParser.usage);
 }
 
@@ -64,37 +67,37 @@ void splitTypes(String path) {
     var xml = typesFile.readAsStringSync();
     var document = XmlDocument.parse(xml);
     var root = document.rootElement;
-    var allTypes = root.findAllElements('type');
-    var categoryToType = <String, List<XmlElement>>{};
+    var allTypes = root.findAllElements("type");
+    var sortedTypes = <String, List<XmlElement>>{};
 
     for (var type in allTypes) {
-      var category = type.findElements('category').firstOrNull;
-      if (category == null) {
-        continue;
-      }
-
-      var categoryName = category.getAttribute('name');
-      if (categoryName == null || categoryName.isEmpty) {
-        categoryName = 'unknown';
-      }
-
-      if (categoryToType.containsKey(categoryName)) {
-        categoryToType[categoryName]?.add(type);
+      var typeName = type.getAttribute("name");
+      var category = typesCategories[typeName];
+      if (category != null) {
+        if (sortedTypes.containsKey(category)) {
+          sortedTypes[category]!.add(type);
+        } else {
+          sortedTypes[category] = [type];
+        }
       } else {
-        categoryToType[categoryName] = [type];
+        if (sortedTypes.containsKey("missed")) {
+          sortedTypes["missed"]!.add(type);
+        } else {
+          sortedTypes["missed"] = [type];
+        }
+        print("------------- MISSED type: $typeName ---------------");
       }
     }
 
-    for (var category in categoryToType.keys) {
-      var categoryTypes = categoryToType[category]!;
-      // create new xml document with root element types
-      var newDocument = XmlDocument();
+    for (var category in sortedTypes.keys) {
+      var categoryTypes = sortedTypes[category]!;
 
+      var newDocument = XmlDocument();
       var xmlVersion = XmlProcessing(
-          'xml', 'version="1.0" encoding="UTF-8" standalone="yes"');
+          "xml", "version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"");
       newDocument.children.add(xmlVersion);
 
-      var root = XmlElement(XmlName('types'));
+      var root = XmlElement(XmlName("types"));
       newDocument.children.add(root);
 
       for (var type in categoryTypes) {
@@ -104,7 +107,41 @@ void splitTypes(String path) {
       // add all categoryTypes to the new xml document
       var newXml = newDocument.toXmlString(pretty: true);
 
-      File('${typesFile.parent.path}/$category.xml').writeAsStringSync(newXml);
+      if (!File("${typesFile.parent.path}/splilt_types/)").existsSync()) {
+        Directory("${typesFile.parent.path}/splilt_types/").createSync();
+      }
+
+      File("${typesFile.parent.path}/splilt_types/$category.xml")
+          .writeAsStringSync(newXml);
     }
   }
 }
+
+// void extractTypeNames(String path) {
+//   var typesFile = File(path);
+
+//   if (typesFile.existsSync()) {
+//     var xml = typesFile.readAsStringSync();
+//     var document = XmlDocument.parse(xml);
+//     var root = document.rootElement;
+//     var allTypes = root.findAllElements("type");
+//     var categoryToType = <String, List<XmlElement>>{};
+//     var typeNames = <String, String>{};
+
+//     for (var type in allTypes) {
+//       var name = type.getAttribute("name");
+//       var category = type.findElements("category").firstOrNull;
+//       if (name != null && name.isNotEmpty) {
+//         typeNames[name] = category?.getAttribute("name") ?? "landnames";
+//       }
+//     }
+
+//     for (var type in typeNames.keys) {
+//       var category = typeNames[type];
+
+//       var newXml = newDocument.toXmlString(pretty: true);
+//       File("${typesFile.parent.path}/split_types/$category.xml")
+//           .writeAsStringSync(newXml);
+//     }
+//   }
+// }
