@@ -43,10 +43,6 @@ ArgParser buildParser() {
     )
 
     // TODO add option for output directory
-    // TODO add option for output file name
-    // TODO add option for filtering by element type example: <category ..
-    // TODO add option for filter by element attribute example: <category name="weapon"..
-    // TODO add option for filter by element value example: <cost>100</cost>
     ..addOption(
       "path",
       abbr: "p",
