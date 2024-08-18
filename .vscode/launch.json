@@ -10,7 +10,7 @@
             "type": "dart",
             "args": [
                 "-p",
-                "D:\\downloads\\DayZ-Central-Economy-master\\dayzOffline.chernarusplus\\db\\types.xml",
+                "E:\\progs\\Steam\\steamapps\\common\\DayZ Server Exp\\mpmissions\\dayzOffline.chernarusplus\\db\\types.xml",
             ]
 
         }
